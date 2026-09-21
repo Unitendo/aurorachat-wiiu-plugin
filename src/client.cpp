@@ -282,12 +282,17 @@ namespace AuroraChat {
         switch (mState.load()) {
             case State::WaitLoginOk:
                 mCurrentRoom = mConfig.room;
-                mState       = State::WaitJoinOk;
-                SendRaw("join", {mConfig.room});
+
+                if (SendRaw("join", {mConfig.room})) {
+                    mState = State::Ready;
+
+                    ShowInfo("Joined " + mCurrentRoom);
+                } else {
+                    mState = State::Disconnected;
+                }
                 break;
             case State::WaitJoinOk:
                 mState = State::Ready;
-                SendRaw("history", {std::to_string(mConfig.historySize)});
                 ShowInfo("Joined " + mCurrentRoom);
                 break;
             default:

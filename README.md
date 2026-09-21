@@ -1,8 +1,8 @@
 # AuroraChat Wii U Plugin
 
-The AuroraChat Wii U Plugin lets you use AuroraChat on Wii U outside of the app! It shows you AuroraChat messages with the use of [libnotifications](https://github.com/wiiu-env/libnotifications), though it lacks features compared to the Wii U app.
+The AuroraChat Wii U Plugin lets you use AuroraChat on Wii U outside of the app! It shows you AuroraChat messages with the use of [libnotifications](https://github.com/wiiu-env/libnotifications) and lets you send messages with a keyboard overlay, though it lacks features compared to the Wii U app.
 For more clients and stuff, see the [main repo](https://github.com/Unitendo/aurorachat).  
-The license, code of conduct, and security/contributing guidelines in the main repo also apply here.
+The code of conduct, and security/contributing guidelines in the main repo also apply here. However, the MIT license used in the main repository does **not** apply here due to the copyleft requirements of the libraries that this plugin uses.
 
 This repository is **open** for contributions! If you'd like to, you may open a PR or an issue, contributing helps us as we develop AuroraChat!
 
