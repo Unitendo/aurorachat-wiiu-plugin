@@ -122,9 +122,13 @@ namespace AuroraChat {
         const uint32_t t = vpad.trigger;
 
         if (t & VPAD_BUTTON_B) {
-            Close(false);
+            if (!mBuffer.empty()) mBuffer.pop_back(); // Backspace
         } else if (t & VPAD_BUTTON_A) {
-            PressSelected();
+            PressSelected(); // Action
+        } else if (t & VPAD_BUTTON_X) {
+            Close(false); // Cancel
+        } else if (t & VPAD_BUTTON_Y) {
+            mBuffer.push_back(' '); // Space
         } else if (t & VPAD_BUTTON_LEFT) {
             mCol = (mCol - 1 + RowLen(mRow)) % RowLen(mRow);
         } else if (t & VPAD_BUTTON_RIGHT) {
