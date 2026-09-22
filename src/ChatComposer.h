@@ -31,6 +31,10 @@ namespace AuroraChat {
 
         bool IsReadingInput() const { return mReadingInput; }
 
+        bool IsShifted() const { return mShifted; }
+
+        bool IsCapsLock() const { return mCapsLock; }
+
     private:
         ChatComposer()                     = default;
         ~ChatComposer()                    = default;
@@ -38,6 +42,7 @@ namespace AuroraChat {
         ChatComposer &operator=(const ChatComposer &) = delete;
 
         void Close(bool submitted);
+        void toggleCapsShift();
         void PressSelected();
 
         int RowLen(int row) const;
@@ -51,6 +56,9 @@ namespace AuroraChat {
         SubmitCallback mOnSubmit;
         int mRow = 0;
         int mCol = 0;
+
+        bool mShifted  = false;
+        bool mCapsLock = false;
     };
 
 } // namespace AuroraChat

@@ -26,7 +26,7 @@ namespace AuroraChat {
         constexpr int kNumLetterRows          = 4;
         constexpr int kActionRow              = 4;
         constexpr int kNumActions             = 4;
-        constexpr const char *kActionLabels[] = {"Space", "Back", "Cancel", "Send"};
+        constexpr const char *kActionLabels[] = {"Shift", "Space", "Back", "Send"};
 
     } // namespace
 
@@ -50,11 +50,17 @@ namespace AuroraChat {
         if (!mInitialized || mActive) {
             return false;
         }
+
         mBuffer.clear();
-        mRow      = 0;
-        mCol      = 0;
+        mRow = 0;
+        mCol = 0;
+
+        mShifted  = false;
+        mCapsLock = false;
+
         mOnSubmit = std::move(onSubmit);
         mActive   = true;
+
         return true;
     }
 
@@ -63,6 +69,18 @@ namespace AuroraChat {
             mOnSubmit(mBuffer);
         }
         mActive = false;
+    }
+
+    void ChatComposer::toggleCapsShift() {
+        if (mCapsLock) {
+            mCapsLock = false;
+            mShifted  = false;
+        } else if (mShifted) {
+            mShifted  = false;
+            mCapsLock = true;
+        } else {
+            mShifted = true;
+        }
     }
 
     int ChatComposer::RowLen(int row) const {
@@ -76,22 +94,38 @@ namespace AuroraChat {
         if (mRow < kNumLetterRows) {
             const char *row = kLetterRows[mRow];
             if (mCol < static_cast<int>(strlen(row))) {
-                mBuffer.push_back(row[mCol]);
+                char c = row[mCol];
+
+                if (mCapsLock || mShifted) {
+                    if (c >= 'a' && c <= 'z') {
+                        c = c - 'a' + 'A';
+                    }
+                }
+
+                mBuffer.push_back(c);
+
+                if (mShifted && !mCapsLock) {
+                    mShifted = false;
+                }
             }
         } else {
             switch (mCol) {
-                case 0:
+                case 0: // Shift
+                    toggleCapsShift();
+                    break;
+                case 1: // Space
                     mBuffer.push_back(' ');
-                    break; // Space
-                case 1:
-                    if (!mBuffer.empty()) mBuffer.pop_back();
-                    break; // Backspace
-                case 2:
-                    Close(false);
-                    break; // Cancel
-                case 3:
+                    break;
+                case 2: // Back
+                    if (!mBuffer.empty()) {
+                        mBuffer.pop_back();
+                    } else {
+                        Close(false);
+                    }
+                    break;
+                case 3: // Send
                     Close(true);
-                    break; // Send
+                    break;
             }
         }
     }
@@ -121,14 +155,20 @@ namespace AuroraChat {
 
         const uint32_t t = vpad.trigger;
 
-        if (t & VPAD_BUTTON_B) {
-            if (!mBuffer.empty()) mBuffer.pop_back(); // Backspace
-        } else if (t & VPAD_BUTTON_A) {
-            PressSelected(); // Action
-        } else if (t & VPAD_BUTTON_X) {
-            Close(false); // Cancel
-        } else if (t & VPAD_BUTTON_Y) {
-            mBuffer.push_back(' '); // Space
+        if (t & VPAD_BUTTON_B) { // Back
+            if (!mBuffer.empty()) {
+                mBuffer.pop_back();
+            } else {
+                Close(false);
+            }
+        } else if (t & VPAD_BUTTON_A) { // Action
+            PressSelected();
+        } else if (t & VPAD_BUTTON_X) { // Cancel
+            Close(false);
+        } else if (t & VPAD_BUTTON_Y) { // Space
+            mBuffer.push_back(' ');
+        } else if (t & VPAD_BUTTON_ZL || t & VPAD_BUTTON_ZR) { // Shift
+            toggleCapsShift();
         } else if (t & VPAD_BUTTON_LEFT) {
             mCol = (mCol - 1 + RowLen(mRow)) % RowLen(mRow);
         } else if (t & VPAD_BUTTON_RIGHT) {

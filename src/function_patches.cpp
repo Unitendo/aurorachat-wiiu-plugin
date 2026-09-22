@@ -81,7 +81,7 @@ namespace {
 
     constexpr int kNumLetterRows = 4;
     constexpr int kActionRow     = 4; // "row" index for the action buttons
-    constexpr int kNumActions    = 4; // Space, Back, Cancel, Send
+    constexpr int kNumActions    = 4; // Shift, Space, Back, Send
 
     constexpr float kCanvasWidth  = 1280.0f;
     constexpr float kCanvasHeight = 720.0f;
@@ -124,6 +124,8 @@ namespace {
 
     uint8_t *sNormalColor    = nullptr;
     uint8_t *sHighlightColor = nullptr;
+    uint8_t *sShiftColor     = nullptr;
+    uint8_t *sCapsLockColor  = nullptr;
 
     bool EnsureColorBuffers() {
         if (sNormalColor && sHighlightColor) {
@@ -132,18 +134,26 @@ namespace {
 
         sNormalColor    = static_cast<uint8_t *>(MEMAllocFromMappedMemoryForGX2Ex(ColorShader::cuColorVtxsSize, GX2_VERTEX_BUFFER_ALIGNMENT));
         sHighlightColor = static_cast<uint8_t *>(MEMAllocFromMappedMemoryForGX2Ex(ColorShader::cuColorVtxsSize, GX2_VERTEX_BUFFER_ALIGNMENT));
+        sShiftColor     = static_cast<uint8_t *>(MEMAllocFromMappedMemoryForGX2Ex(ColorShader::cuColorVtxsSize, GX2_VERTEX_BUFFER_ALIGNMENT));
+        sCapsLockColor  = static_cast<uint8_t *>(MEMAllocFromMappedMemoryForGX2Ex(ColorShader::cuColorVtxsSize, GX2_VERTEX_BUFFER_ALIGNMENT));
 
-        if (!sNormalColor || !sHighlightColor) {
+        if (!sNormalColor || !sHighlightColor || !sShiftColor || !sCapsLockColor) {
             DEBUG_FUNCTION_LINE("Renderer: failed to allocate key color buffers");
             return false;
         }
 
-        const uint8_t normal[]    = {60, 60, 60, 220, 60, 60, 60, 220, 60, 60, 60, 220, 60, 60, 60, 220};
-        const uint8_t highlight[] = {255, 220, 0, 255, 255, 220, 0, 255, 255, 220, 0, 255, 255, 220, 0, 255};
+        const uint8_t normal[]        = {60, 60, 60, 220, 60, 60, 60, 220, 60, 60, 60, 220, 60, 60, 60, 220};
+        const uint8_t highlight[]     = {255, 220, 0, 255, 255, 220, 0, 255, 255, 220, 0, 255, 255, 220, 0, 255};
+        const uint8_t shiftColor[]    = {100, 190, 255, 255, 100, 190, 255, 255, 100, 190, 255, 255, 100, 190, 255, 255};
+        const uint8_t capsLockColor[] = {80, 200, 100, 255, 80, 200, 100, 255, 80, 200, 100, 255, 80, 200, 100, 255};
         memcpy(sNormalColor, normal, sizeof(normal));
         memcpy(sHighlightColor, highlight, sizeof(highlight));
+        memcpy(sShiftColor, shiftColor, sizeof(shiftColor));
+        memcpy(sCapsLockColor, capsLockColor, sizeof(capsLockColor));
         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sNormalColor, ColorShader::cuColorVtxsSize);
         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sHighlightColor, ColorShader::cuColorVtxsSize);
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sShiftColor, ColorShader::cuColorVtxsSize);
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sCapsLockColor, ColorShader::cuColorVtxsSize);
 
         return true;
     }
@@ -241,9 +251,9 @@ namespace {
 
 
     constexpr const char *kActionLabels[] = {
+            "Shift",
             "Space",
             "Back",
-            "Cancel",
             "Send",
     };
 
@@ -261,6 +271,9 @@ namespace {
 
         const int selectedRow = composer.SelectedRow();
         const int selectedCol = composer.SelectedCol();
+
+        const bool shifted  = composer.IsShifted();
+        const bool capsLock = composer.IsCapsLock();
 
         GX2ColorBuffer cb;
         GX2InitColorBuffer(&cb, colorBuffer->surface.dim, colorBuffer->surface.width, colorBuffer->surface.height, colorBuffer->surface.depth, colorBuffer->surface.format, colorBuffer->surface.aa, colorBuffer->surface.tileMode, colorBuffer->surface.swizzle, colorBuffer->aaBuffer, colorBuffer->aaSize);
@@ -299,7 +312,7 @@ namespace {
 
         const float targetHeight = static_cast<float>(cb.surface.height);
 
-        auto drawKey = [&](float x, float y, float w, float h, bool highlighted) {
+        auto drawKey = [&](float x, float y, float w, float h, bool highlighted, bool shifted, bool capsLock) {
             float offset[4];
             float scale[4];
 
@@ -308,7 +321,15 @@ namespace {
             shader->setOffset(offset);
             shader->setScale(scale);
 
-            shader->setAttributeBuffer(highlighted ? sHighlightColor : sNormalColor);
+            if (capsLock) {
+                shader->setAttributeBuffer(sCapsLockColor);
+            } else if (shifted) {
+                shader->setAttributeBuffer(sShiftColor);
+            } else if (highlighted) {
+                shader->setAttributeBuffer(sHighlightColor);
+            } else {
+                shader->setAttributeBuffer(sNormalColor);
+            }
 
             GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
         };
@@ -327,7 +348,7 @@ namespace {
 
                 const bool highlighted = row == selectedRow && col == selectedCol;
 
-                drawKey(x, y, kKeySize, kKeySize, highlighted);
+                drawKey(x, y, kKeySize, kKeySize, highlighted, false, false);
             }
         }
 
@@ -337,7 +358,9 @@ namespace {
 
             const bool highlighted = selectedRow == kActionRow && selectedCol == i;
 
-            drawKey(x, y, kActionButtonWidth, kActionButtonHeight, highlighted);
+            const bool shiftButton = i == 0;
+
+            drawKey(x, y, kActionButtonWidth, kActionButtonHeight, highlighted, shiftButton && shifted, shiftButton && capsLock);
         }
 
 
@@ -360,8 +383,16 @@ namespace {
                 const float x = kGridStartX + static_cast<float>(col) * (kKeySize + kKeyGap);
                 const float y = kGridStartY + static_cast<float>(row) * (kKeySize + kKeyGap);
 
+                char character = chars[col];
+
+                if (shifted || capsLock) {
+                    if (character >= 'a' && character <= 'z') {
+                        character = character - 'a' + 'A';
+                    }
+                }
+
                 char label[2] = {
-                        chars[col],
+                        character,
                         '\0'};
 
                 DrawKeyLabel(label, x, y, kKeySize, kKeySize, textColor);
