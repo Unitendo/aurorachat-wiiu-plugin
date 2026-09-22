@@ -5,34 +5,33 @@
 
 namespace AuroraChat {
 
-namespace {
-    constexpr const char *accountFile = "fs:/vol/external01/wiiu/apps/aurorachatforWiiU/account.dat";
-} // namespace
+    namespace {
+        constexpr const char *accountFile = "fs:/vol/external01/wiiu/apps/aurorachatforWiiU/account.dat";
+    } // namespace
 
-bool LoadLogin(std::string& username, std::string& password)
-{
-    FILE* file = fopen(accountFile, "r");
-    if (!file)
-        return false;
+    bool LoadLogin(std::string &username, std::string &password) {
+        FILE *file = fopen(accountFile, "r");
+        if (!file)
+            return false;
 
-    char user[128];
-    char pass[128];
+        char user[128];
+        char pass[128];
 
-    if (!fgets(user, sizeof(user), file) || !fgets(pass, sizeof(pass), file)) {
+        if (!fgets(user, sizeof(user), file) || !fgets(pass, sizeof(pass), file)) {
+            fclose(file);
+            return false;
+        }
+
         fclose(file);
-        return false;
+
+        // remove newline
+        user[strcspn(user, "\n")] = 0;
+        pass[strcspn(pass, "\n")] = 0;
+
+        username = user;
+        password = pass;
+
+        return true;
     }
-
-    fclose(file);
-
-    // remove newline
-    user[strcspn(user, "\n")] = 0;
-    pass[strcspn(pass, "\n")] = 0;
-
-    username = user;
-    password = pass;
-
-    return true;
-}
 
 } // namespace AuroraChat

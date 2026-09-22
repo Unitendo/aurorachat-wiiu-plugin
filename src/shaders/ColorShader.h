@@ -88,11 +88,11 @@ public:
     void setOffset(const float *vec) const {
         VertexShader::setUniformReg(offsetLocation, 4, vec);
     }
-    
+
     void setScale(const float *vec) const {
         VertexShader::setUniformReg(scaleLocation, 4, vec);
     }
-    
+
     void setColorIntensity(const float *vec) const {
         PixelShader::setUniformReg(colorIntensityLocation, 4, vec);
     }

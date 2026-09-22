@@ -24,66 +24,66 @@ WUPS_USE_STORAGE("aurorachat");
 
 
 namespace {
-AuroraChat::Config BuildConfig(const std::string &login, const std::string &password) {
-    AuroraChat::Config config;
-    config.host        = "104.236.25.60";
-    config.port        = 7070;
-    config.login       = login;
-    config.password    = password;
-    config.room        = "general";
-    return config;
-}
-
-
-constexpr double kInfoNotificationSeconds  = 5.0;
-constexpr double kErrorNotificationSeconds = 7.0;
-
-void ConfigureNotificationDefaults() {
-    NotificationModuleStatus status = NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO, NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT, kInfoNotificationSeconds);
-    if (status != NOTIFICATION_MODULE_RESULT_SUCCESS) {
-        DEBUG_FUNCTION_LINE("Failed to set info notification duration: %s", NotificationModule_GetStatusStr(status));
+    AuroraChat::Config BuildConfig(const std::string &login, const std::string &password) {
+        AuroraChat::Config config;
+        config.host     = "104.236.25.60";
+        config.port     = 7070;
+        config.login    = login;
+        config.password = password;
+        config.room     = "general";
+        return config;
     }
 
-    status = NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR, NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT, kErrorNotificationSeconds);
-    if (status != NOTIFICATION_MODULE_RESULT_SUCCESS) {
-        DEBUG_FUNCTION_LINE("Failed to set error notification duration: %s", NotificationModule_GetStatusStr(status));
-    }
-}
 
-constexpr WUPSButtonCombo_Buttons OPEN_COMPOSER_COMBO = WUPS_BUTTON_COMBO_BUTTON_L | WUPS_BUTTON_COMBO_BUTTON_DOWN | WUPS_BUTTON_COMBO_BUTTON_PLUS;
+    constexpr double kInfoNotificationSeconds  = 5.0;
+    constexpr double kErrorNotificationSeconds = 7.0;
 
-std::optional<WUPSButtonComboAPI::ButtonCombo> sOpenComposerCombo;
-
-void OnComposerSubmit(const std::string &text) {
-    if (!AuroraChat::Client::Instance().SendMessage(text)) {
-        NotificationModule_AddErrorNotification("AuroraChat: not connected, message not sent");
-    }
-}
-
-void OpenComposerCallback(WUPSButtonCombo_ControllerTypes, WUPSButtonCombo_ComboHandle, void *) {
-    if (AuroraChat::ChatComposer::Instance().IsActive()) {
-        AuroraChat::ChatComposer::Instance().ForceCloseNow();
-        return;
-    }
-
-    AuroraChat::ChatComposer::Instance().Open(OnComposerSubmit);
-}
-
-void InitComposerCombo() {
-    WUPSButtonCombo_ComboStatus status = WUPS_BUTTON_COMBO_COMBO_STATUS_INVALID_STATUS;
-    WUPSButtonCombo_Error error = WUPS_BUTTON_COMBO_ERROR_UNKNOWN_ERROR;
-
-    auto result = WUPSButtonComboAPI::CreateComboPressDown("AuroraChat: Open Composer", OPEN_COMPOSER_COMBO, OpenComposerCallback, nullptr, status, error);
-
-    if (result && error == WUPS_BUTTON_COMBO_ERROR_SUCCESS) {
-        sOpenComposerCombo = std::move(*result); // keep it alive
-        if (status == WUPS_BUTTON_COMBO_COMBO_STATUS_CONFLICT) {
-            DEBUG_FUNCTION_LINE("AuroraChat composer combo has a CONFLICT and is INACTIVE");
+    void ConfigureNotificationDefaults() {
+        NotificationModuleStatus status = NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO, NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT, kInfoNotificationSeconds);
+        if (status != NOTIFICATION_MODULE_RESULT_SUCCESS) {
+            DEBUG_FUNCTION_LINE("Failed to set info notification duration: %s", NotificationModule_GetStatusStr(status));
         }
-    } else {
-        DEBUG_FUNCTION_LINE("Failed to register composer combo: error=%d status=%d", error, status);
+
+        status = NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR, NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT, kErrorNotificationSeconds);
+        if (status != NOTIFICATION_MODULE_RESULT_SUCCESS) {
+            DEBUG_FUNCTION_LINE("Failed to set error notification duration: %s", NotificationModule_GetStatusStr(status));
+        }
     }
-}
+
+    constexpr WUPSButtonCombo_Buttons OPEN_COMPOSER_COMBO = WUPS_BUTTON_COMBO_BUTTON_L | WUPS_BUTTON_COMBO_BUTTON_DOWN | WUPS_BUTTON_COMBO_BUTTON_PLUS;
+
+    std::optional<WUPSButtonComboAPI::ButtonCombo> sOpenComposerCombo;
+
+    void OnComposerSubmit(const std::string &text) {
+        if (!AuroraChat::Client::Instance().SendMessage(text)) {
+            NotificationModule_AddErrorNotification("AuroraChat: not connected, message not sent");
+        }
+    }
+
+    void OpenComposerCallback(WUPSButtonCombo_ControllerTypes, WUPSButtonCombo_ComboHandle, void *) {
+        if (AuroraChat::ChatComposer::Instance().IsActive()) {
+            AuroraChat::ChatComposer::Instance().ForceCloseNow();
+            return;
+        }
+
+        AuroraChat::ChatComposer::Instance().Open(OnComposerSubmit);
+    }
+
+    void InitComposerCombo() {
+        WUPSButtonCombo_ComboStatus status = WUPS_BUTTON_COMBO_COMBO_STATUS_INVALID_STATUS;
+        WUPSButtonCombo_Error error        = WUPS_BUTTON_COMBO_ERROR_UNKNOWN_ERROR;
+
+        auto result = WUPSButtonComboAPI::CreateComboPressDown("AuroraChat: Open Composer", OPEN_COMPOSER_COMBO, OpenComposerCallback, nullptr, status, error);
+
+        if (result && error == WUPS_BUTTON_COMBO_ERROR_SUCCESS) {
+            sOpenComposerCombo = std::move(*result); // keep it alive
+            if (status == WUPS_BUTTON_COMBO_COMBO_STATUS_CONFLICT) {
+                DEBUG_FUNCTION_LINE("AuroraChat composer combo has a CONFLICT and is INACTIVE");
+            }
+        } else {
+            DEBUG_FUNCTION_LINE("Failed to register composer combo: error=%d status=%d", error, status);
+        }
+    }
 } // namespace
 
 

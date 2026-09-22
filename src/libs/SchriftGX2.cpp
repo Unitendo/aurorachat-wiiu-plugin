@@ -581,12 +581,12 @@ void SchriftGX2::copyTextureToFramebuffer(GX2Texture *texture, int16_t x, int16_
     float widthScale  = blurScale * (float) texture->surface.width * widthScaleFactor;
     float heightScale = blurScale * (float) texture->surface.height * heightScaleFactor;
 
-    float positionOffsets[4] = { offsetLeft, offsetTop, (float) z, 0.0f };
+    float positionOffsets[4] = {offsetLeft, offsetTop, (float) z, 0.0f};
 
     //! blur doubles  due to blur we have to scale the texture
-    float scaleFactor[4] = { widthScale, heightScale, 1.0f, 0.0f };
+    float scaleFactor[4] = {widthScale, heightScale, 1.0f, 0.0f};
 
-    float blurDirection[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+    float blurDirection[4] = {0.0f, 0.0f, 1.0f, 0.0f};
 
     Texture2DShader::instance()->setShaders();
     Texture2DShader::instance()->setAttributeBuffer();
