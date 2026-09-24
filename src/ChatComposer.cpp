@@ -55,6 +55,8 @@ namespace AuroraChat {
         mRow = 0;
         mCol = 0;
 
+        mPendingTrigger = 0;
+
         mShifted  = false;
         mCapsLock = false;
 
@@ -68,7 +70,9 @@ namespace AuroraChat {
         if (submitted && mOnSubmit && !mBuffer.empty()) {
             mOnSubmit(mBuffer);
         }
-        mActive = false;
+
+        mPendingTrigger = 0;
+        mActive         = false;
     }
 
     void ChatComposer::toggleCapsShift() {
@@ -140,20 +144,12 @@ namespace AuroraChat {
             return;
         }
 
-        VPADStatus vpad{};
-        VPADReadError err;
+        const uint32_t t = mPendingTrigger;
+        mPendingTrigger  = 0;
 
-        mReadingInput = true;
-
-        const int32_t count = VPADRead(VPAD_CHAN_0, &vpad, 1, &err);
-
-        mReadingInput = false;
-
-        if (count <= 0 || err != VPAD_READ_SUCCESS) {
+        if (t == 0) {
             return;
         }
-
-        const uint32_t t = vpad.trigger;
 
         if (t & VPAD_BUTTON_B) { // Back
             if (!mBuffer.empty()) {
@@ -180,6 +176,14 @@ namespace AuroraChat {
             mRow = (mRow + 1) % (kActionRow + 1);
             mCol = std::min(mCol, RowLen(mRow) - 1);
         }
+    }
+
+    void ChatComposer::SetPendingInput(uint32_t trigger) {
+        if (!mActive || trigger == 0) {
+            return;
+        }
+
+        mPendingTrigger |= trigger;
     }
 
 } // namespace AuroraChat

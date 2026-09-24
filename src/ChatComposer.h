@@ -25,6 +25,8 @@ namespace AuroraChat {
 
         void RunFrame();
 
+        void SetPendingInput(uint32_t trigger);
+
         void RequestClose() { mForceClose = true; }
 
         void ForceCloseNow() { mActive = false; }
@@ -56,6 +58,8 @@ namespace AuroraChat {
         SubmitCallback mOnSubmit;
         int mRow = 0;
         int mCol = 0;
+
+        uint32_t mPendingTrigger = 0;
 
         bool mShifted  = false;
         bool mCapsLock = false;

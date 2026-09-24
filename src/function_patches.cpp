@@ -468,9 +468,11 @@ DECL_FUNCTION(int32_t, VPADRead_hook, VPADChan chan, VPADStatus *buffers, uint32
     if (result > 0 && realError == VPAD_READ_SUCCESS) {
         auto &composer = AuroraChat::ChatComposer::Instance();
 
-        if (composer.IsActive() && !composer.IsReadingInput()) {
+        if (composer.IsActive()) {
             for (uint32_t i = 0; i < count; ++i) {
-                // Consume all GamePad button inputs
+                composer.SetPendingInput(buffers[i].trigger);
+
+                // Prevent the app from receiving our keyboard input
                 buffers[i].trigger = 0;
                 buffers[i].hold    = 0;
                 buffers[i].release = 0;
