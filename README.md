@@ -12,7 +12,8 @@ This repository is **open** for contributions! If you'd like to, you may open a 
 
 1. Copy the file  `AuroraChatPlugin.wps` into `sd:/wiiu/environments/[ENVIRONMENT]/plugins`.
 2. Requires the [WiiUPluginLoaderBackend](https://github.com/wiiu-env/WiiUPluginLoaderBackend) in `sd:/wiiu/environments/[ENVIRONMENT]/modules`.
-3. Requires the [NotificationModule](https://github.com/wiiu-env/NotificationModule) in `sd:/wiiu/environments/[ENVIRONMENT]/modules`.
+3. Requires the [MemoryMappingModule](https://github.com/wiiu-env/MemoryMappingModule) in `sd:/wiiu/environments/[ENVIRONMENT]/modules`.
+4. Requires the [NotificationModule](https://github.com/wiiu-env/NotificationModule) in `sd:/wiiu/environments/[ENVIRONMENT]/modules`.
 
 ## Building
 
@@ -20,6 +21,8 @@ For building you need:
 
 * [wut](https://github.com/devkitpro/wut)
 * [wups](https://github.com/Maschell/WiiUPluginSystem)
+* [libmappedmemory](https://github.com/wiiu-env/libmappedmemory)
+* [libnotifications](https://github.com/wiiu-env/libnotifications)
 
 ## Building Using Docker
 
