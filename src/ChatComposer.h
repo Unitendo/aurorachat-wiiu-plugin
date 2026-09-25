@@ -27,6 +27,8 @@ namespace AuroraChat {
 
         void SetPendingInput(uint32_t trigger);
 
+        void SetPendingTouch(uint16_t x, uint16_t y, bool touched);
+
         void RequestClose() { mForceClose = true; }
 
         void ForceCloseNow() { mActive = false; }
@@ -47,6 +49,8 @@ namespace AuroraChat {
         void toggleCapsShift();
         void PressSelected();
 
+        void PressTouch(int x, int y);
+
         int RowLen(int row) const;
 
         bool mInitialized = false;
@@ -59,7 +63,12 @@ namespace AuroraChat {
         int mRow = 0;
         int mCol = 0;
 
-        uint32_t mPendingTrigger = 0;
+        std::atomic<uint32_t> mPendingTrigger{0};
+
+        uint16_t mPendingTouchX = 0;
+        uint16_t mPendingTouchY = 0;
+        bool mPendingTouchDown  = false;
+        bool mTouchWasDown      = false;
 
         bool mShifted  = false;
         bool mCapsLock = false;

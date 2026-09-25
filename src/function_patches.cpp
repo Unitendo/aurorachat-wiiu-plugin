@@ -461,26 +461,42 @@ DECL_FUNCTION(void, GX2SwapScanBuffers_hook) {
 }
 
 DECL_FUNCTION(int32_t, VPADRead_hook, VPADChan chan, VPADStatus *buffers, uint32_t count, VPADReadError *error) {
-    VPADReadError realError;
+    VPADReadError realError = VPAD_READ_SUCCESS;
 
     const int32_t result = real_VPADRead_hook(chan, buffers, count, &realError);
 
-    if (result > 0 && realError == VPAD_READ_SUCCESS) {
+    if (result > 0 && realError == VPAD_READ_SUCCESS && buffers != nullptr && chan == VPAD_CHAN_0) {
         auto &composer = AuroraChat::ChatComposer::Instance();
 
         if (composer.IsActive()) {
-            for (uint32_t i = 0; i < count; ++i) {
-                composer.SetPendingInput(buffers[i].trigger);
+            VPADTouchData touch = {};
 
+            VPADGetTPCalibratedPoint(VPAD_CHAN_0, &touch, &buffers[0].tpNormal);
+
+            if (touch.touched) {
+                DEBUG_FUNCTION_LINE("TOUCH: x=%d y=%d", touch.x, touch.y);
+
+                composer.SetPendingTouch(touch.x, touch.y, true);
+            } else {
+                composer.SetPendingTouch(0, 0, false);
+            }
+
+            composer.SetPendingInput(buffers[0].trigger);
+
+            for (uint32_t i = 0; i < count; ++i) {
                 // Prevent the app from receiving our keyboard input
                 buffers[i].trigger = 0;
                 buffers[i].hold    = 0;
                 buffers[i].release = 0;
+
+                buffers[i].tpNormal.touched    = 0;
+                buffers[i].tpFiltered1.touched = 0;
+                buffers[i].tpFiltered2.touched = 0;
             }
         }
     }
 
-    if (error) {
+    if (error != nullptr) {
         *error = realError;
     }
 

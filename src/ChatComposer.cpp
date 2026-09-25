@@ -28,6 +28,18 @@ namespace AuroraChat {
         constexpr int kNumActions             = 4;
         constexpr const char *kActionLabels[] = {"Shift", "Space", "Back", "Send"};
 
+        constexpr int kCanvasWidth  = 1280;
+        constexpr int kCanvasHeight = 720;
+
+        constexpr int kGridStartX = 140;
+        constexpr int kGridStartY = 160;
+
+        constexpr int kKeySize = 64;
+        constexpr int kKeyGap  = 10;
+
+        constexpr int kActionButtonWidth  = 200;
+        constexpr int kActionButtonHeight = 64;
+
     } // namespace
 
 
@@ -42,8 +54,13 @@ namespace AuroraChat {
     }
 
     void ChatComposer::Shutdown() {
-        mActive      = false;
-        mInitialized = false;
+        mActive           = false;
+        mInitialized      = false;
+        mPendingTrigger   = 0;
+        mPendingTouchX    = 0;
+        mPendingTouchY    = 0;
+        mPendingTouchDown = false;
+        mTouchWasDown     = false;
     }
 
     bool ChatComposer::Open(SubmitCallback onSubmit) {
@@ -56,6 +73,11 @@ namespace AuroraChat {
         mCol = 0;
 
         mPendingTrigger = 0;
+
+        mPendingTouchX    = 0;
+        mPendingTouchY    = 0;
+        mPendingTouchDown = false;
+        mTouchWasDown     = false;
 
         mShifted  = false;
         mCapsLock = false;
@@ -73,6 +95,11 @@ namespace AuroraChat {
 
         mPendingTrigger = 0;
         mActive         = false;
+
+        mPendingTouchX    = 0;
+        mPendingTouchY    = 0;
+        mPendingTouchDown = false;
+        mTouchWasDown     = false;
     }
 
     void ChatComposer::toggleCapsShift() {
@@ -134,6 +161,70 @@ namespace AuroraChat {
         }
     }
 
+    void ChatComposer::PressTouch(int x, int y) {
+        if (!mActive) {
+            return;
+        }
+
+        for (int row = 0; row < kNumLetterRows; ++row) {
+            const char *keys   = kLetterRows[row];
+            const int keyCount = static_cast<int>(strlen(keys));
+
+            const int rowY = kGridStartY + row * (kKeySize + kKeyGap);
+
+            if (y < rowY || y >= rowY + kKeySize) {
+                continue;
+            }
+
+            for (int col = 0; col < keyCount; ++col) {
+                const int keyX = kGridStartX + col * (kKeySize + kKeyGap);
+
+                if (x >= keyX &&
+                    x < keyX + kKeySize) {
+
+                    mRow = row;
+                    mCol = col;
+
+                    PressSelected();
+                    return;
+                }
+            }
+        }
+
+        const int actionY = kGridStartY + kNumLetterRows * (kKeySize + kKeyGap);
+
+        if (y < actionY || y >= actionY + kActionButtonHeight) {
+            return;
+        }
+
+        for (int col = 0; col < kNumActions; ++col) {
+            const int buttonX = kGridStartX + col * (kActionButtonWidth + kKeyGap);
+
+            if (x >= buttonX &&
+                x < buttonX + kActionButtonWidth) {
+
+                mRow = kActionRow;
+                mCol = col;
+
+                PressSelected();
+                return;
+            }
+        }
+    }
+
+
+    void ChatComposer::SetPendingTouch(uint16_t x, uint16_t y, bool touched) {
+
+        if (!mActive) {
+            return;
+        }
+
+        mPendingTouchX    = x;
+        mPendingTouchY    = y;
+        mPendingTouchDown = touched;
+    }
+
+
     void ChatComposer::RunFrame() {
         if (!mActive) {
             return;
@@ -144,8 +235,15 @@ namespace AuroraChat {
             return;
         }
 
-        const uint32_t t = mPendingTrigger;
-        mPendingTrigger  = 0;
+        // This prevents holding a finger on a key from typing the same character every frame
+        if (mPendingTouchDown && !mTouchWasDown) {
+            PressTouch(static_cast<int>(mPendingTouchX), static_cast<int>(mPendingTouchY));
+        }
+
+        mTouchWasDown     = mPendingTouchDown;
+        mPendingTouchDown = false;
+
+        const uint32_t t = mPendingTrigger.exchange(0, std::memory_order_acquire);
 
         if (t == 0) {
             return;
@@ -183,7 +281,7 @@ namespace AuroraChat {
             return;
         }
 
-        mPendingTrigger |= trigger;
+        mPendingTrigger.fetch_or(trigger, std::memory_order_release);
     }
 
 } // namespace AuroraChat
