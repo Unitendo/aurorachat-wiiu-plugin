@@ -33,6 +33,11 @@ namespace {
     bool sContextStateReady                = false;
     SchriftGX2 *sFont                      = nullptr;
 
+    uint8_t *sNormalColor    = nullptr;
+    uint8_t *sHighlightColor = nullptr;
+    uint8_t *sShiftColor     = nullptr;
+    uint8_t *sCapsLockColor  = nullptr;
+
 } // namespace
 
 
@@ -59,6 +64,26 @@ void Renderer_AllocateContextState() {
 void Renderer_Deinitialize() {
     delete sFont;
     sFont = nullptr;
+
+    if (sNormalColor) {
+        MEMFreeToMappedMemory(sNormalColor);
+        sNormalColor = nullptr;
+    }
+
+    if (sHighlightColor) {
+        MEMFreeToMappedMemory(sHighlightColor);
+        sHighlightColor = nullptr;
+    }
+
+    if (sShiftColor) {
+        MEMFreeToMappedMemory(sShiftColor);
+        sShiftColor = nullptr;
+    }
+
+    if (sCapsLockColor) {
+        MEMFreeToMappedMemory(sCapsLockColor);
+        sCapsLockColor = nullptr;
+    }
 
     if (sContextState) {
         MEMFreeToMappedMemory(sContextState);
@@ -121,11 +146,6 @@ namespace {
         outScale[3] = 0.0f;
     }
 
-
-    uint8_t *sNormalColor    = nullptr;
-    uint8_t *sHighlightColor = nullptr;
-    uint8_t *sShiftColor     = nullptr;
-    uint8_t *sCapsLockColor  = nullptr;
 
     bool EnsureColorBuffers() {
         if (sNormalColor && sHighlightColor) {
@@ -436,6 +456,9 @@ DECL_FUNCTION(void, GX2Init_hook, uint32_t attributes) {
     uint32_t fontSize = 0;
 
     if (OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, &font, &fontSize) && font && fontSize > 0) {
+        delete sFont;
+        sFont = nullptr;
+
         sFont = new (std::nothrow) SchriftGX2(static_cast<uint8_t *>(font), static_cast<int32_t>(fontSize));
     }
 
