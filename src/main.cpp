@@ -26,7 +26,7 @@ WUPS_USE_STORAGE("aurorachat");
 namespace {
     AuroraChat::Config BuildConfig(const std::string &login, const std::string &password) {
         AuroraChat::Config config;
-        config.host     = "144.217.26.87";
+        config.host     = "";
         config.port     = 7070;
         config.login    = login;
         config.password = password;
